@@ -10,24 +10,30 @@ OUT_DIR = output
 APP_TARGET  = $(OUT_DIR)/app
 TEST_TARGET = $(OUT_DIR)/test_suite
 
+ifeq ($(V),1)
+  Q =
+else
+  Q = @
+endif
+
 # Default: Build the actual app
 all: $(APP_TARGET)
 
 # Build App: Uses CORE files + main.c
 $(APP_TARGET): $(CORE_SRCS) $(APP_MAIN)
-	mkdir -p $(OUT_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(Q) mkdir -p $(OUT_DIR)
+	$(Q) $(CC) $(CFLAGS) $^ -o $@
 
 # Build Test: Uses CORE files + everything in test/
 $(TEST_TARGET): $(CORE_SRCS) $(TEST_SRCS)
-	mkdir -p $(OUT_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(Q) mkdir -p $(OUT_DIR)
+	$(Q) $(CC) $(CFLAGS) $^ -o $@
 
 # Run the test
 test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+	$(Q)./$(TEST_TARGET)
 
 clean:
-	rm -rf $(OUT_DIR)
+	$(Q) rm -rf $(OUT_DIR)
 
 .PHONY: all test clean

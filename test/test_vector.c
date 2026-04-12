@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "vector.h"
-#include "print.h"
 #include "expect.h"
 
 bool test_init() {
@@ -42,7 +41,7 @@ bool test_init_with_values() {
 }
 
 void run_vector_tests() {
-    if(test_init()) PRINTSTRING("Init test sucess"); 
-    if(test_allocation()) PRINTSTRING("Allocation test sucess");;
-    if(test_init_with_values()) PRINTSTRING("Init with values test sucess");;
+    if(test_init()) printf("Init test sucess\n"); 
+    if(test_allocation()) printf("Allocation test sucess\n");;
+    if(test_init_with_values()) printf("Init with values test sucess\n");;
 }
