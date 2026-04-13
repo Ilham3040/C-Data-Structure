@@ -4,13 +4,54 @@
 #include <stdio.h>
 
 
-typedef struct Vector
+typedef struct
 {
     int  *data;
     size_t  size;
     size_t capacity;
 
-}Vector;
+}VectorInt;
+
+
+
+typedef enum {
+    ERR_NONE = 0,
+    ERR_NOT_FOUND,
+    ERR_OUT_OF_BOUNDS,
+    ERR_EMPTY,
+    ERR_NULL_POINTER
+} VectorInt_ErrorCode;
+
+typedef struct {
+    int *ptr;
+    size_t len;
+} VectorInt_Slice;
+
+
+typedef struct {
+    bool success;
+    union {
+        int value;
+        VectorInt_ErrorCode error;
+    } data;
+} VectorInt_IntResult;
+
+
+typedef struct {
+    bool success;
+    union {
+        VectorInt_Slice slice;
+        VectorInt_ErrorCode error;
+    } data;
+} VectorInt_SliceResult;
+
+
+typedef struct {
+    bool success;
+    VectorInt_ErrorCode error;
+} VectorInt_InitStatus;
+
+
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -41,10 +82,10 @@ typedef struct Vector
 
 
 
-static inline bool _internal_allocation(Vector *vector, size_t len) {
+static inline bool _internal_VectorInt_allocation(VectorInt *vector, size_t len) {
     CHECKLENGTH(len);
 
-    Vector temp = { .data = NULL, .size = 0, .capacity = len };
+    VectorInt temp = { .data = NULL, .size = 0, .capacity = len };
 
     temp.data = (int *)malloc(sizeof(int) * len);
     if (temp.data == NULL) {
@@ -55,7 +96,7 @@ static inline bool _internal_allocation(Vector *vector, size_t len) {
     return true;
 }
 
-static inline bool _reallocate_Vector(Vector *vector, size_t new_capacity) {
+static inline bool _reallocate_VectorInt(VectorInt *vector, size_t new_capacity) {
     CHECKNULLPTR(vector);
     CHECKLENGTH(new_capacity);
     CHECKRESIZE(new_capacity,vector->size);
@@ -76,18 +117,18 @@ static inline bool _reallocate_Vector(Vector *vector, size_t new_capacity) {
 
 
 
-bool init_Vector(Vector *vector) {
-    return _internal_allocation(vector,16);
+bool init_VectorInt(VectorInt *vector) {
+    return _internal_VectorInt_allocation(vector,16);
     
 }
 
-bool allocate_Vector(Vector *vector, size_t length) {
-    return _internal_allocation(vector,length);
+bool allocate_VectorInt(VectorInt *vector, size_t length) {
+    return _internal_VectorInt_allocation(vector,length);
 }
 
-bool init_Vector_with_values(Vector *vector, int *values, size_t array_size) {
+bool init_VectorInt_with_values(VectorInt *vector, int *values, size_t array_size) {
 
-    if (_internal_allocation(vector,array_size*2))
+    if (_internal_VectorInt_allocation(vector,array_size*2))
     {
         memcpy(vector->data,values,array_size*sizeof(int));
         vector->size = array_size;
@@ -100,10 +141,10 @@ bool init_Vector_with_values(Vector *vector, int *values, size_t array_size) {
 
 
 
-bool insert_Vector(Vector *vector, int value) {
+bool insert_VectorInt(VectorInt *vector, int value) {
 
     if (vector->size >= vector->capacity) {
-        if (!_reallocate_Vector(vector,vector->capacity*2))
+        if (!_reallocate_VectorInt(vector,vector->capacity*2))
         {
             return false;
         }
@@ -116,11 +157,11 @@ bool insert_Vector(Vector *vector, int value) {
 
 }
 
-bool mutiple_insert_Vector(Vector *vector, size_t array_size, int *values) {
+bool mutiple_insert_VectorInt(VectorInt *vector, size_t array_size, int *values) {
 
     if (vector->size+array_size >= vector->capacity) {
         size_t needed = MAX(vector->capacity*2,(array_size+vector->size)*2);
-        if (!_reallocate_Vector(vector,needed)) {
+        if (!_reallocate_VectorInt(vector,needed)) {
             return false;
         }
         
@@ -133,13 +174,13 @@ bool mutiple_insert_Vector(Vector *vector, size_t array_size, int *values) {
 }
 
 
-bool resize_Vector(Vector *vector, size_t size) {
+bool resize_VectorInt(VectorInt *vector, size_t size) {
 
-    return _reallocate_Vector(vector,size);
+    return _reallocate_VectorInt(vector,size);
 }
 
 
-bool get_index_Vector(Vector *vector, int *dest, size_t index) {
+bool get_index_VectorInt(VectorInt *vector, int *dest, size_t index) {
     CHECKNULLPTR(vector);
     CHECKNULLPTR(dest);
     CHECKINDEX(index,vector->size);
@@ -148,7 +189,7 @@ bool get_index_Vector(Vector *vector, int *dest, size_t index) {
     return true;
 }
 
-bool slice_index_Vector(Vector *vector, Vector *dest, size_t start, size_t end) {
+bool slice_index_VectorInt(VectorInt *vector, VectorInt *dest, size_t start, size_t end) {
     CHECKNULLPTR(vector);
     CHECKNULLPTR(dest)
     CHECKINDEX(start,vector->size);
@@ -156,7 +197,7 @@ bool slice_index_Vector(Vector *vector, Vector *dest, size_t start, size_t end) 
 
     size_t len = (end - start + 1);
 
-    if (allocate_Vector(dest,len))
+    if (allocate_VectorInt(dest,len))
     {
         memcpy(dest->data,vector->data+start, len * sizeof(int));
         return true;
@@ -165,7 +206,7 @@ bool slice_index_Vector(Vector *vector, Vector *dest, size_t start, size_t end) 
     return false;
 }
 
-bool free_Vector(Vector *vector) {
+bool free_VectorInt(VectorInt *vector) {
     CHECKNULLPTR(vector);
 
     free(vector->data);     

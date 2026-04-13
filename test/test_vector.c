@@ -6,17 +6,17 @@
 #include "expect.h"
 
 bool test_init() {
-    Vector my_arr;
-    EXPECT_EQUAL(init_Vector(&my_arr),true);
+    VectorInt my_arr;
+    EXPECT_EQUAL(init_VectorInt(&my_arr),true);
 
-    EXPECT_EQUAL(my_arr.size,16);
+    EXPECT_EQUAL(my_arr.size,0);
     EXPECT_EQUAL(my_arr.capacity,16);
     return true;
 }
 
 bool test_allocation() {
-    Vector my_arr;
-    EXPECT_EQUAL(allocate_Vector(&my_arr,30),true);
+    VectorInt my_arr;
+    EXPECT_EQUAL(allocate_VectorInt(&my_arr,30),true);
 
     EXPECT_EQUAL(my_arr.size,0);
     EXPECT_EQUAL(my_arr.capacity,30);
@@ -24,11 +24,11 @@ bool test_allocation() {
 }
 
 bool test_init_with_values() {
-    Vector my_arr;
+    VectorInt my_arr;
     int staticarr[] = {1,2,3,4,5,6};
     EXPECT_EQUAL(ARRAY_LEN(staticarr),6);
 
-    EXPECT_EQUAL(init_Vector_with_values(&my_arr,staticarr,ARRAY_LEN(staticarr)),true);
+    EXPECT_EQUAL(init_VectorInt_with_values(&my_arr,staticarr,ARRAY_LEN(staticarr)),true);
 
     EXPECT_EQUAL(my_arr.size,6);
     EXPECT_EQUAL(my_arr.capacity,12);
