@@ -1,13 +1,21 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-typedef struct VectorInt
+typedef struct
 {
     int  *data;
     size_t  size;
     size_t capacity;
 
 }VectorInt;
+
+typedef struct {
+    int *ptr;
+    size_t len;
+} VectorInt_Slice;
+
+
+
 
 typedef enum {
     ERR_NONE = 0,
@@ -17,11 +25,14 @@ typedef enum {
     ERR_NULL_POINTER
 } VectorInt_ErrorCode;
 
-typedef struct {
-    int *ptr;
-    size_t len;
-} VectorInt_Slice;
 
+typedef struct {
+    bool success;
+    union {
+        VectorInt vector;
+        VectorInt_ErrorCode error;
+    } data;
+} VectorInt_InitResult;
 
 typedef struct {
     bool success;
@@ -29,7 +40,7 @@ typedef struct {
         int value;
         VectorInt_ErrorCode error;
     } data;
-} VectorInt_IntResult;
+} VectorInt_ValueResult;
 
 
 typedef struct {
@@ -41,17 +52,13 @@ typedef struct {
 } VectorInt_SliceResult;
 
 
-typedef struct {
-    bool success;
-    VectorInt_ErrorCode error;
-} VectorInt_InitStatus;
-
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define ARRAY_LEN(x) (sizeof(x) / sizeof(x[0]))
 
 
-bool init_VectorInt(VectorInt *vector);
-bool allocate_VectorInt(VectorInt *vector, size_t length);
-bool init_VectorInt_with_values(VectorInt *vector, int *values, size_t array_size);
+VectorInt_InitResult init_VectorInt();
+VectorInt_InitResult allocate_VectorInt(size_t length);
+VectorInt_InitResult init_VectorInt_with_values(int *values, size_t array_size);
+const char* printerror_VectorInt(VectorInt_ErrorCode error);

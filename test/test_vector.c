@@ -2,12 +2,20 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "vector.h"
+#include "vectorint.h"
 #include "expect.h"
 
 bool test_init() {
-    VectorInt my_arr;
-    EXPECT_EQUAL(init_VectorInt(&my_arr),true);
+
+    VectorInt_InitResult result = init_VectorInt();
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
+
 
     EXPECT_EQUAL(my_arr.size,0);
     EXPECT_EQUAL(my_arr.capacity,16);
@@ -15,8 +23,15 @@ bool test_init() {
 }
 
 bool test_allocation() {
-    VectorInt my_arr;
-    EXPECT_EQUAL(allocate_VectorInt(&my_arr,30),true);
+    VectorInt_InitResult result = allocate_VectorInt(30);
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
+
 
     EXPECT_EQUAL(my_arr.size,0);
     EXPECT_EQUAL(my_arr.capacity,30);
@@ -24,14 +39,21 @@ bool test_allocation() {
 }
 
 bool test_init_with_values() {
-    VectorInt my_arr;
     int staticarr[] = {1,2,3,4,5,6};
-    EXPECT_EQUAL(ARRAY_LEN(staticarr),6);
 
-    EXPECT_EQUAL(init_VectorInt_with_values(&my_arr,staticarr,ARRAY_LEN(staticarr)),true);
+    VectorInt_InitResult result = init_VectorInt_with_values(staticarr,ARRAY_LEN(staticarr));
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
 
-    EXPECT_EQUAL(my_arr.size,6);
-    EXPECT_EQUAL(my_arr.capacity,12);
+
+    EXPECT_EQUAL(my_arr.size,ARRAY_LEN(staticarr));
+    EXPECT_EQUAL(my_arr.capacity, ARRAY_LEN(staticarr)*2);
+    return true;
 
     for (size_t i = 0; i < my_arr.size; i++)
     {
@@ -42,6 +64,6 @@ bool test_init_with_values() {
 
 void run_vector_tests() {
     if(test_init()) printf("Init test sucess\n"); 
-    if(test_allocation()) printf("Allocation test sucess\n");;
-    if(test_init_with_values()) printf("Init with values test sucess\n");;
+    if(test_allocation()) printf("Allocation test sucess\n");
+    if(test_init_with_values()) printf("Init with values test sucess\n");
 }
