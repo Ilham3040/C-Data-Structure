@@ -1,8 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <stdio.h>
-
 
 typedef struct
 {
@@ -18,17 +16,16 @@ typedef struct {
 } VectorInt_Slice;
 
 
-
-
 typedef enum {
     ERR_NONE = 0,
     ERR_NOT_FOUND,
     ERR_OUT_OF_BOUNDS,
-    ERR_EMPTY,
+    ERR_EMPTY_VECTOR,
     ERR_NULL_POINTER,
     ERR_INVALID_LENGTH,
     ERR_HEAP_ALLOCATION_FAILED,
     ERR_RESIZE_FAILED,
+    ERR_INVALID_SLICE_RANGE
 } VectorInt_ErrorCode;
 
 
@@ -62,39 +59,12 @@ typedef struct {
 typedef struct {
     bool success;
     VectorInt_ErrorCode error;
-} VectorInt_InsertingResult;
-
-
-
+} VectorInt_ReturnStatus;
 
 
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-
-#define CHECKNULLPTR(ptr) \
-    if ((ptr) == NULL) { \
-        fprintf(stderr, "Error: %s is NULL at %s:%d\n", #ptr, __FILE__, __LINE__); \
-        return false; \
-    } 
-
-#define CHECKLENGTH(x) \
-    if ((x) == 0) { \
-        fprintf(stderr, "Error: length cannot be zero or negative at %s:%d\n", __FILE__, __LINE__); \
-    } 
-
-#define CHECKRESIZE(resize, size) \
-    if ((resize) < (size)) { \
-        fprintf(stderr, "Error: cannot resize smaller than current vector size (size : %zu) at %s:%d\n",(size_t)(size) ,__FILE__, __LINE__); \
-        return false; \
-    }
-
-#define CHECKINDEX(index, size) \
-    if ((index) >= (size)) { \
-        fprintf(stderr, "Error: Index %zu out of bounds (Size: %zu) at %s:%d\n", (size_t)(index),(size_t)(size), __FILE__, __LINE__); \
-        return false; \
-    }
-
 
 
 static inline VectorInt_InitResult _internal_VectorInt_allocation(size_t len) {
@@ -123,10 +93,6 @@ static inline VectorInt_InitResult _internal_VectorInt_allocation(size_t len) {
 
 
 
-
-
-
-
 VectorInt_InitResult init_VectorInt() {
     return _internal_VectorInt_allocation(16);
     
@@ -152,23 +118,23 @@ VectorInt_InitResult init_VectorInt_with_values(int *values, size_t array_size) 
 }
 
 
-static inline VectorInt_InsertingResult _reallocate_VectorInt(VectorInt *vector, size_t new_capacity) {
+static inline VectorInt_ReturnStatus _reallocate_VectorInt(VectorInt *vector, size_t new_capacity) {
     if (vector == NULL) { 
-         return (VectorInt_InsertingResult){
+         return (VectorInt_ReturnStatus){
             .success = false, 
             .error = ERR_NULL_POINTER
         };
     };
 
     if (new_capacity == 0) {
-        return (VectorInt_InsertingResult){
+        return (VectorInt_ReturnStatus){
             .success = false, 
             .error = ERR_INVALID_LENGTH
         };
     }
 
     if (new_capacity < vector->size) {
-        return (VectorInt_InsertingResult){
+        return (VectorInt_ReturnStatus){
             .success = false, 
             .error = ERR_RESIZE_FAILED
         };
@@ -178,7 +144,7 @@ static inline VectorInt_InsertingResult _reallocate_VectorInt(VectorInt *vector,
 
     if (temp == NULL)
     {
-        return (VectorInt_InsertingResult){
+        return (VectorInt_ReturnStatus){
             .success = false, 
             .error = ERR_HEAP_ALLOCATION_FAILED
         };
@@ -187,17 +153,17 @@ static inline VectorInt_InsertingResult _reallocate_VectorInt(VectorInt *vector,
     vector->capacity = new_capacity;
     vector->data = temp;
 
-    return (VectorInt_InsertingResult){
+    return (VectorInt_ReturnStatus){
         .success = true, 
         .error = ERR_NONE
     };
 }
 
 
-VectorInt_InsertingResult insert_VectorInt(VectorInt *vector, int value) {
+VectorInt_ReturnStatus insert_VectorInt(VectorInt *vector, int value) {
 
     if (vector->size >= vector->capacity) {
-        VectorInt_InsertingResult result = _reallocate_VectorInt(vector,vector->capacity*2);
+        VectorInt_ReturnStatus result = _reallocate_VectorInt(vector,vector->capacity*2);
 
         if (!result.success)
         {
@@ -207,18 +173,18 @@ VectorInt_InsertingResult insert_VectorInt(VectorInt *vector, int value) {
     }
     vector->data[vector->size] = value;
     vector->size++;
-    return (VectorInt_InsertingResult){
+    return (VectorInt_ReturnStatus){
         .success = true, 
         .error = ERR_NONE
     };
 
 }
 
-VectorInt_InsertingResult mutiple_insert_VectorInt(VectorInt *vector, size_t array_size, int *values) {
+VectorInt_ReturnStatus mutiple_insert_VectorInt(VectorInt *vector, size_t array_size, int *values) {
 
     if (vector->size+array_size >= vector->capacity) {
         size_t needed = MAX(vector->capacity*2,(array_size+vector->size)*2);
-        VectorInt_InsertingResult result = _reallocate_VectorInt(vector,needed);
+        VectorInt_ReturnStatus result = _reallocate_VectorInt(vector,needed);
 
         if (!result.success)
         {
@@ -229,7 +195,7 @@ VectorInt_InsertingResult mutiple_insert_VectorInt(VectorInt *vector, size_t arr
 
     memcpy(vector->data+vector->size,values,array_size * sizeof(int));
     vector->size += array_size;
-    return (VectorInt_InsertingResult){
+    return (VectorInt_ReturnStatus){
         .success = true, 
         .error = ERR_NONE
     };
@@ -237,59 +203,120 @@ VectorInt_InsertingResult mutiple_insert_VectorInt(VectorInt *vector, size_t arr
 }
 
 
-VectorInt_InsertingResult resize_VectorInt(VectorInt *vector, size_t size) {
+VectorInt_ReturnStatus resize_VectorInt(VectorInt *vector, size_t size) {
 
     return _reallocate_VectorInt(vector,size);
 }
 
 
-// bool get_index_VectorInt(VectorInt *vector, int *dest, size_t index) {
-//     CHECKNULLPTR(vector);
-//     CHECKNULLPTR(dest);
-//     CHECKINDEX(index,vector->size);
+VectorInt_ValueResult get_index(VectorInt *vector, size_t index) {
+    if (vector == NULL) { 
+         return (VectorInt_ValueResult){
+            .success = false, 
+            .data.error = ERR_NULL_POINTER
+        };
+    };
 
-//     *dest = vector->data[index];
-//     return true;
-// }
+    if (vector->size == 0) { 
+         return (VectorInt_ValueResult){
+            .success = false, 
+            .data.error = ERR_EMPTY_VECTOR
+        };
+    };
 
-// bool slice_index_VectorInt(VectorInt *vector, VectorInt *dest, size_t start, size_t end) {
-//     CHECKNULLPTR(vector);
-//     CHECKNULLPTR(dest)
-//     CHECKINDEX(start,vector->size);
-//     CHECKINDEX(end,vector->size);
+    if (index >= vector->size) {
+        return (VectorInt_ValueResult){
+            .success = false, 
+            .data.error = ERR_OUT_OF_BOUNDS
+        };
+    }
 
-//     size_t len = (end - start + 1);
+    return (VectorInt_ValueResult){
+        .success = true, 
+        .data.value = vector->data[index]
+    };
+}
 
-//     if (allocate_VectorInt(dest,len))
-//     {
-//         memcpy(dest->data,vector->data+start, len * sizeof(int));
-//         return true;
-//     }
+VectorInt_SliceResult slice_index_VectorInt(VectorInt *vector, size_t start, size_t end) {
+    if (vector == NULL) { 
+         return (VectorInt_SliceResult){
+            .success = false, 
+            .data.error = ERR_NULL_POINTER
+        };
+    };
+
+    if (vector->size == 0) { 
+         return (VectorInt_SliceResult){
+            .success = false, 
+            .data.error = ERR_EMPTY_VECTOR
+        };
+    };
+
+    if (start >= vector->size) {
+        return (VectorInt_SliceResult){
+            .success = false, 
+            .data.error = ERR_OUT_OF_BOUNDS
+        };
+    }
+
+    if (end >= vector->size) {
+        return (VectorInt_SliceResult){
+            .success = false, 
+            .data.error = ERR_OUT_OF_BOUNDS
+        };
+    }
+
+    if (start > end) {
+        return (VectorInt_SliceResult){
+            .success = false, 
+            .data.error = ERR_INVALID_SLICE_RANGE
+        };
+    }
+
+    size_t len = (end - start + 1);
+
+    VectorInt_Slice slice = {
+        .ptr = vector->data+start,
+        .len = len
+    };
     
-//     return false;
-// }
+    return (VectorInt_SliceResult){
+        .success = true, 
+        .data.slice = slice
+    };
+}
 
-// bool free_VectorInt(VectorInt *vector) {
-//     CHECKNULLPTR(vector);
+VectorInt_ReturnStatus free_VectorInt(VectorInt *vector) {
+    if (vector == NULL) { 
+         return (VectorInt_ReturnStatus){
+            .success = false, 
+            .error = ERR_NULL_POINTER
+        };
+    };
 
-//     free(vector->data);     
-//     vector->data = NULL;
-//     vector->size = 0;       
-//     vector->capacity = 0;
+    free(vector->data);     
+    vector->data = NULL;
+    vector->size = 0;
+    vector->capacity = 0;
     
-//     return true;
-// }
+    return (VectorInt_ReturnStatus){
+        .success = true, 
+        .error = ERR_NONE
+    };
+}
 
 const char* printerror_VectorInt(VectorInt_ErrorCode error) {
     switch (error) {
         case ERR_NONE:                    return "ERR_NONE";
         case ERR_NOT_FOUND:               return "ERR_NOT_FOUND";
         case ERR_OUT_OF_BOUNDS:           return "ERR_OUT_OF_BOUNDS";
-        case ERR_EMPTY:                   return "ERR_EMPTY";
+        case ERR_EMPTY_VECTOR:            return "ERR_EMPTY_VECTOR";
         case ERR_NULL_POINTER:            return "ERR_NULL_POINTER";
         case ERR_INVALID_LENGTH:          return "ERR_INVALID_LENGTH";
         case ERR_HEAP_ALLOCATION_FAILED:  return "ERR_HEAP_ALLOCATION_FAILED";
         case ERR_RESIZE_FAILED:           return "ERR_RESIZE_FAILED";
+        case ERR_INVALID_SLICE_RANGE:     return "ERR_INVALID_SLICE_RANGE";
         default:                          return "UNKNOWN_ERROR";
     }
 }
+

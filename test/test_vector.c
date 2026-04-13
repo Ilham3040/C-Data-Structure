@@ -61,7 +61,6 @@ bool test_init_with_values() {
 
     EXPECT_EQUAL(my_arr.size,ARRAY_LEN(staticarr));
     EXPECT_EQUAL(my_arr.capacity, ARRAY_LEN(staticarr)*2);
-    return true;
 
     for (size_t i = 0; i < my_arr.size; i++)
     {
@@ -86,7 +85,7 @@ bool test_insert() {
     EXPECT_EQUAL(my_arr.size,0);
     EXPECT_EQUAL(my_arr.capacity,10);
 
-    VectorInt_InsertingResult insertResult = insert_VectorInt(&my_arr,13);
+    VectorInt_ReturnStatus insertResult = insert_VectorInt(&my_arr,13);
 
     EXPECT_EQUAL(insertResult.success,true);
 
@@ -99,7 +98,6 @@ bool test_insert() {
 }
 
 bool test_multiple_insert() {
-
     VectorInt_InitResult result = allocate_VectorInt(4);
 
     if (!result.success)
@@ -117,7 +115,7 @@ bool test_multiple_insert() {
 
     int staticarr[] = {1,2,3,4,5,6};
 
-    VectorInt_InsertingResult insertResult = mutiple_insert_VectorInt(&my_arr,ARRAY_LEN(staticarr),staticarr);
+    VectorInt_ReturnStatus insertResult = mutiple_insert_VectorInt(&my_arr,ARRAY_LEN(staticarr),staticarr);
 
     EXPECT_EQUAL(insertResult.success,true);
 
@@ -149,13 +147,106 @@ bool test_resizing() {
     EXPECT_EQUAL(my_arr.capacity,4);
 
 
-    VectorInt_InsertingResult insertResult = resize_VectorInt(&my_arr,49);
+    VectorInt_ReturnStatus insertResult = resize_VectorInt(&my_arr,49);
     EXPECT_EQUAL(insertResult.success,true);
 
     EXPECT_EQUAL(my_arr.size,0);
     EXPECT_EQUAL(my_arr.capacity,49);
-
+    return true;
 }
+
+bool test_get_index() {
+    VectorInt_InitResult result = allocate_VectorInt(4);
+
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
+    EXPECT_EQUAL(my_arr.size,0);
+    EXPECT_EQUAL(my_arr.capacity,4);
+
+    VectorInt_ReturnStatus insertResult = insert_VectorInt(&my_arr,13);
+
+    EXPECT_EQUAL(insertResult.success,true);
+
+    EXPECT_EQUAL(my_arr.size,1);
+    EXPECT_EQUAL(my_arr.capacity,4);
+
+    VectorInt_ValueResult getindexResult = get_index(&my_arr,0);
+
+    EXPECT_EQUAL(getindexResult.success,true);
+    EXPECT_EQUAL(getindexResult.data.value,13);
+
+    return true;
+}
+
+bool test_get_slice() {
+    int staticarr[] = {1,2,3,4,5,6};
+
+    VectorInt_InitResult result = init_VectorInt_with_values(staticarr,ARRAY_LEN(staticarr));
+
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
+
+    VectorInt_SliceResult sliceResult = slice_index_VectorInt(&my_arr,0,3);
+    EXPECT_EQUAL(sliceResult.success,true);
+
+    VectorInt_Slice slice = sliceResult.data.slice;
+
+
+    EXPECT_EQUAL(my_arr.size,ARRAY_LEN(staticarr));
+    EXPECT_EQUAL(my_arr.capacity, ARRAY_LEN(staticarr)*2);
+
+    EXPECT_EQUAL(slice.len,4);
+    EXPECT_EQUAL(slice.ptr, my_arr.data+0);
+
+    for (size_t i = slice.len; i < my_arr.size; i++)
+    {
+        EXPECT_EQUAL(my_arr.data[i+0],slice.ptr[i]);
+    }
+    
+    return true;
+}
+
+bool test_free() {
+    VectorInt_InitResult result = init_VectorInt();
+
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
+
+
+    EXPECT_EQUAL(my_arr.size,0);
+    EXPECT_EQUAL(my_arr.capacity,16);
+
+    VectorInt_ReturnStatus freeResult = free_VectorInt(&my_arr);
+
+    EXPECT_EQUAL(freeResult.success,true);
+
+    EXPECT_EQUAL(my_arr.data, NULL);
+    EXPECT_EQUAL(my_arr.size,0);
+    EXPECT_EQUAL(my_arr.capacity,0);
+
+
+    return true;
+}
+
+
 
 void run_vector_tests() {
     if(test_init()) printf("Init test success\n"); 
@@ -164,4 +255,7 @@ void run_vector_tests() {
     if(test_insert()) printf("Insert test success\n");
     if(test_multiple_insert()) printf("Multiple insert test success\n");
     if(test_resizing()) printf("Resizing test success\n");
+    if(test_get_index()) printf("Get index test successful\n");
+    if(test_get_slice()) printf("Get slice test success\n");
+    if(test_free())printf("Free test success\n");
 }
