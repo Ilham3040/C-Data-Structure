@@ -27,7 +27,8 @@ typedef enum {
     ERR_EMPTY,
     ERR_NULL_POINTER,
     ERR_INVALID_LENGTH,
-    ERR_HEAP_INIT_FAILED,
+    ERR_HEAP_ALLOCATION_FAILED,
+    ERR_RESIZE_FAILED,
 } VectorInt_ErrorCode;
 
 
@@ -57,6 +58,11 @@ typedef struct {
         VectorInt_ErrorCode error;
     } data;
 } VectorInt_SliceResult;
+
+typedef struct {
+    bool success;
+    VectorInt_ErrorCode error;
+} VectorInt_InsertingResult;
 
 
 
@@ -105,7 +111,7 @@ static inline VectorInt_InitResult _internal_VectorInt_allocation(size_t len) {
     if (new_vector.data == NULL) {
         return (VectorInt_InitResult){
             .success = false, 
-            .data.error = ERR_HEAP_INIT_FAILED
+            .data.error = ERR_HEAP_ALLOCATION_FAILED
         };
     }
 
@@ -146,61 +152,95 @@ VectorInt_InitResult init_VectorInt_with_values(int *values, size_t array_size) 
 }
 
 
-// static inline bool _reallocate_VectorInt(VectorInt *vector, size_t new_capacity) {
-//     CHECKNULLPTR(vector);
-//     CHECKLENGTH(new_capacity);
-//     CHECKRESIZE(new_capacity,vector->size);
+static inline VectorInt_InsertingResult _reallocate_VectorInt(VectorInt *vector, size_t new_capacity) {
+    if (vector == NULL) { 
+         return (VectorInt_InsertingResult){
+            .success = false, 
+            .error = ERR_NULL_POINTER
+        };
+    };
 
-//     int *temp = realloc(vector->data,sizeof(int)*new_capacity);
-//     if (temp == NULL)
-//     {
-//         return false;
-//     }
+    if (new_capacity == 0) {
+        return (VectorInt_InsertingResult){
+            .success = false, 
+            .error = ERR_INVALID_LENGTH
+        };
+    }
 
-//     vector->capacity = new_capacity;
-//     vector->data = temp;
+    if (new_capacity < vector->size) {
+        return (VectorInt_InsertingResult){
+            .success = false, 
+            .error = ERR_RESIZE_FAILED
+        };
+    }
 
-//     return true;
-// }
+    int *temp = realloc(vector->data,sizeof(int)*new_capacity);
+
+    if (temp == NULL)
+    {
+        return (VectorInt_InsertingResult){
+            .success = false, 
+            .error = ERR_HEAP_ALLOCATION_FAILED
+        };
+    }
+
+    vector->capacity = new_capacity;
+    vector->data = temp;
+
+    return (VectorInt_InsertingResult){
+        .success = true, 
+        .error = ERR_NONE
+    };
+}
 
 
-// bool insert_VectorInt(VectorInt *vector, int value) {
+VectorInt_InsertingResult insert_VectorInt(VectorInt *vector, int value) {
 
-//     if (vector->size >= vector->capacity) {
-//         if (!_reallocate_VectorInt(vector,vector->capacity*2))
-//         {
-//             return false;
-//         }
+    if (vector->size >= vector->capacity) {
+        VectorInt_InsertingResult result = _reallocate_VectorInt(vector,vector->capacity*2);
+
+        if (!result.success)
+        {
+            return result;
+        } 
         
-//     }
+    }
+    vector->data[vector->size] = value;
+    vector->size++;
+    return (VectorInt_InsertingResult){
+        .success = true, 
+        .error = ERR_NONE
+    };
 
-//     vector->data[vector->size] = value;
-//     vector->size++;
-//     return true;
+}
 
-// }
+VectorInt_InsertingResult mutiple_insert_VectorInt(VectorInt *vector, size_t array_size, int *values) {
 
-// bool mutiple_insert_VectorInt(VectorInt *vector, size_t array_size, int *values) {
+    if (vector->size+array_size >= vector->capacity) {
+        size_t needed = MAX(vector->capacity*2,(array_size+vector->size)*2);
+        VectorInt_InsertingResult result = _reallocate_VectorInt(vector,needed);
 
-//     if (vector->size+array_size >= vector->capacity) {
-//         size_t needed = MAX(vector->capacity*2,(array_size+vector->size)*2);
-//         if (!_reallocate_VectorInt(vector,needed)) {
-//             return false;
-//         }
+        if (!result.success)
+        {
+            return result;
+        } 
         
-//     }
+    }
 
-//     memcpy(vector->data+vector->size,values,array_size * sizeof(int));
-//     vector->size += array_size;
-//     return true;
+    memcpy(vector->data+vector->size,values,array_size * sizeof(int));
+    vector->size += array_size;
+    return (VectorInt_InsertingResult){
+        .success = true, 
+        .error = ERR_NONE
+    };
 
-// }
+}
 
 
-// bool resize_VectorInt(VectorInt *vector, size_t size) {
+VectorInt_InsertingResult resize_VectorInt(VectorInt *vector, size_t size) {
 
-//     return _reallocate_VectorInt(vector,size);
-// }
+    return _reallocate_VectorInt(vector,size);
+}
 
 
 // bool get_index_VectorInt(VectorInt *vector, int *dest, size_t index) {
@@ -242,13 +282,14 @@ VectorInt_InitResult init_VectorInt_with_values(int *values, size_t array_size) 
 
 const char* printerror_VectorInt(VectorInt_ErrorCode error) {
     switch (error) {
-        case ERR_NONE:              return "ERR_NONE";
-        case ERR_NOT_FOUND:         return "ERR_NOT_FOUND";
-        case ERR_OUT_OF_BOUNDS:     return "ERR_OUT_OF_BOUNDS";
-        case ERR_EMPTY:             return "ERR_EMPTY";
-        case ERR_NULL_POINTER:      return "ERR_NULL_POINTER";
-        case ERR_INVALID_LENGTH:    return "ERR_INVALID_LENGTH";
-        case ERR_HEAP_INIT_FAILED:  return "ERR_HEAP_INIT_FAILED";
-        default:                    return "UNKNOWN_ERROR";
+        case ERR_NONE:                    return "ERR_NONE";
+        case ERR_NOT_FOUND:               return "ERR_NOT_FOUND";
+        case ERR_OUT_OF_BOUNDS:           return "ERR_OUT_OF_BOUNDS";
+        case ERR_EMPTY:                   return "ERR_EMPTY";
+        case ERR_NULL_POINTER:            return "ERR_NULL_POINTER";
+        case ERR_INVALID_LENGTH:          return "ERR_INVALID_LENGTH";
+        case ERR_HEAP_ALLOCATION_FAILED:  return "ERR_HEAP_ALLOCATION_FAILED";
+        case ERR_RESIZE_FAILED:           return "ERR_RESIZE_FAILED";
+        default:                          return "UNKNOWN_ERROR";
     }
 }

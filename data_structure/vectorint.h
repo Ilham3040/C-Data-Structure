@@ -51,6 +51,11 @@ typedef struct {
     } data;
 } VectorInt_SliceResult;
 
+typedef struct {
+    bool success;
+    VectorInt_ErrorCode error;
+} VectorInt_InsertingResult;
+
 
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -61,4 +66,7 @@ typedef struct {
 VectorInt_InitResult init_VectorInt();
 VectorInt_InitResult allocate_VectorInt(size_t length);
 VectorInt_InitResult init_VectorInt_with_values(int *values, size_t array_size);
+VectorInt_InsertingResult insert_VectorInt(VectorInt *vector, int value);
+VectorInt_InsertingResult mutiple_insert_VectorInt(VectorInt *vector, size_t array_size, int *values);
+VectorInt_InsertingResult resize_VectorInt(VectorInt *vector, size_t size);
 const char* printerror_VectorInt(VectorInt_ErrorCode error);
