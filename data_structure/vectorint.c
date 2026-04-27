@@ -305,6 +305,8 @@ VectorInt_ReturnStatus free_VectorInt(VectorInt *vector) {
     };
 }
 
+
+
 const char* printerror_VectorInt(VectorInt_ErrorCode error) {
     switch (error) {
         case ERR_NONE:                    return "ERR_NONE";
@@ -318,5 +320,60 @@ const char* printerror_VectorInt(VectorInt_ErrorCode error) {
         case ERR_INVALID_SLICE_RANGE:     return "ERR_INVALID_SLICE_RANGE";
         default:                          return "UNKNOWN_ERROR";
     }
+}
+
+void _internal_quicksort_VectorInt(VectorInt *vector,size_t start, size_t end) {
+
+    if (start >= end) return;
+
+    int pivot = vector->data[start];
+    size_t i  = start;
+    size_t j = end;
+
+    while (true)
+    {
+        while(vector->data[i] < pivot) i++;
+        while(vector->data[j] > pivot) j--;
+
+        if (i >= j)
+        {
+            pivot = vector->data[j];
+            
+            break;
+            
+        }
+
+        int temp = vector->data[i];
+        vector->data[i] = vector->data[j];
+        vector->data[j] = temp;
+
+        i++;
+        if (j>0)j--;
+        
+    }
+
+    _internal_quicksort_VectorInt(vector, start, j);
+    _internal_quicksort_VectorInt(vector, j + 1, end);
+    
+}
+    
+
+VectorInt_ReturnStatus quicksort_VectorInt(VectorInt *vector) {
+    if (vector == NULL) { 
+        return (VectorInt_ReturnStatus){
+            .success = false, 
+            .error = ERR_NULL_POINTER
+        };
+    };
+
+
+    _internal_quicksort_VectorInt(vector,0,vector->size-1);
+
+
+
+    return (VectorInt_ReturnStatus){
+        .success = true, 
+        .error = ERR_NONE
+    };
 }
 

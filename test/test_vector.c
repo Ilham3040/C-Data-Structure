@@ -246,6 +246,37 @@ bool test_free() {
     return true;
 }
 
+bool test_quick_sort() {
+    int staticarr[] = {3,5,6,2,1,4};
+    int sortedarr[] = {1,2,3,4,5,6};
+
+    VectorInt_InitResult result = init_VectorInt_with_values(staticarr,ARRAY_LEN(staticarr));
+
+    if (!result.success)
+    {
+        printf("%s",printerror_VectorInt(result.data.error));
+        return false;
+    }
+
+    EXPECT_EQUAL(result.success,true);
+    VectorInt my_arr = result.data.vector;
+
+    EXPECT_EQUAL(my_arr.size,ARRAY_LEN(staticarr));
+    EXPECT_EQUAL(my_arr.capacity, ARRAY_LEN(staticarr)*2);
+
+    VectorInt_ReturnStatus sortResult = quicksort_VectorInt(&my_arr);
+    EXPECT_EQUAL(sortResult.success,true);
+
+    for (size_t i = 0; i < my_arr.size; i++)
+    {
+        EXPECT_EQUAL(my_arr.data[i],sortedarr[i]);
+        printf("%i \n",my_arr.data[i]);
+    }
+
+    
+    return true;
+}
+
 
 
 void run_vector_tests() {
@@ -257,5 +288,6 @@ void run_vector_tests() {
     if(test_resizing()) printf("Resizing test success\n");
     if(test_get_index()) printf("Get index test successful\n");
     if(test_get_slice()) printf("Get slice test success\n");
-    if(test_free())printf("Free test success\n");
+    if(test_free()) printf("Free test success\n");
+    if(test_quick_sort()) printf("Quick Sort test success\n");
 }

@@ -77,4 +77,6 @@ VectorInt_SliceResult slice_index_VectorInt(VectorInt *vector, size_t start, siz
 
 VectorInt_ReturnStatus free_VectorInt(VectorInt *vector);
 
+VectorInt_ReturnStatus quicksort_VectorInt(VectorInt *vector);
+
 const char* printerror_VectorInt(VectorInt_ErrorCode error);
