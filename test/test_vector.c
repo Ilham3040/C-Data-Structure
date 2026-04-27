@@ -270,7 +270,6 @@ bool test_quick_sort() {
     for (size_t i = 0; i < my_arr.size; i++)
     {
         EXPECT_EQUAL(my_arr.data[i],sortedarr[i]);
-        printf("%i \n",my_arr.data[i]);
     }
 
     
